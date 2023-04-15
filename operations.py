@@ -100,8 +100,10 @@ class AutoOperator:
         # 検索ワード／ログファイルからデータの読み込み
         search_words = self.__get_search_words()
         logs = pd.read_csv(FILE_AUTO_LIKES_LOG)
-        executable_likes_left = int(max_likes) - (logs['date'] == today).sum() if int(max_likes) - (logs['date'] == today).sum() > 0 else 0
-        print(f"\033[1m\033[096m本日（{today}）の自動実行済いいね！数 : \033[4m{(logs['date'] == today).sum()}（あと{executable_likes_left}回実行可能）\033[0m\n")
+        todays_rows = logs['date'] == today
+        likes_rows = logs['operation'] == 'LIKE'
+        executable_likes_left = int(max_likes) - logs.loc[todays_rows & likes_rows].shape[0] if int(max_likes) - logs.loc[todays_rows & likes_rows].shape[0] > 0 else 0
+        print(f"\033[1m\033[096m本日（{today}）の自動実行済いいね！数 : \033[4m{logs.loc[todays_rows & likes_rows].shape[0]}（あと{executable_likes_left}回実行可能）\033[0m\n")
         if (logs['date'] == today).sum() >= int(max_likes):
             print(f"\n\033[1m\033[041m既に１日のいいね！の上限回数({max_likes})を超えています。処理を終了します。\033[0m")
             exit()
@@ -140,13 +142,16 @@ class AutoOperator:
                     new_log = pd.DataFrame({
                         'date': [today],
                         'time': [datetime.datetime.now().time()],
+                        'operation': 'LIKE',
                         'url': [href]
                     })
                     logs = pd.concat([logs, new_log])
-                    print(f"\033[1m\033[042m[本日{(logs['date'] == today).sum()}回目のいいね]：\033[0m\033[1m\033[032m　{href}\033[0m")
+                    todays_rows = logs['date'] == today
+                    likes_rows = logs['operation'] == 'LIKE'
+                    print(f"\033[1m\033[042m[本日{logs.loc[todays_rows & likes_rows].shape[0]}回目のいいね]：\033[0m\033[1m\033[032m　{href}\033[0m")
 
                     #BAN防止
-                    if (logs['date'] == today).sum() >= int(max_likes):
+                    if logs.loc[todays_rows & likes_rows].shape[0] >= int(max_likes):
                         print(f"\n\033[1m\033[041m１日のいいね！の上限回数({max_likes})を超えました。処理を終了します。\033[0m")
                         off = True
 
@@ -163,4 +168,4 @@ class AutoOperator:
                 if off:
                     break
         logs.to_csv(FILE_AUTO_LIKES_LOG, index=False)
-        print(f"\n\033[1m\033[096m[本日のいいね！回数]:　\033[4m{(logs['date'] == today).sum()}\033[0m")
+        print(f"\n\033[1m\033[096m[本日のいいね！回数]:　\033[4m{logs.loc[todays_rows & likes_rows].shape[0]}\033[0m")
