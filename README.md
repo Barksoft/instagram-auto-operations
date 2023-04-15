@@ -32,5 +32,7 @@
 - `config/search_words.txt`内にいいね対象とするハッシュタグを設定
     - 改行区切り
     - 「#」は不要
+- 依存パッケージインストール
+    - `$ poetry install`
 - 実行
     - `$ poetry run ./main.py`
