@@ -47,7 +47,7 @@ class AutoOperator:
             print(f"\033[1m\033[041m{FILE_WORDS}が見つかりません。処理を終了します。\033[041m" )
             exit()
         return words
-    
+
     def __login(self, username, password):
         # Instagramを開く
         self.driver.get(LOGIN_URL)
@@ -65,7 +65,7 @@ class AutoOperator:
             print("ブロックされました。パスワードを変更する必要があります。")
             print("処理を終了します。")
             exit()
-    
+
     def __get_post_hrefs_by_hashtag(self, word):
         # ハッシュタグの検索
         self.driver.get(TAG_SEARCH_URL.format(urllib.parse.unquote(word)))
@@ -79,34 +79,34 @@ class AutoOperator:
             if "/p/" in href:
                 href_list.append(href)
         return href_list
-    
+
     def __get_todays_likes_count(self, logs):
         todays_rows = logs['date'] == self.today
         likes_rows = logs['operation'] == 'LIKE'
         success_rows = logs['status'] == 'SUCCESS'
         return logs.loc[todays_rows & likes_rows & success_rows].shape[0]
-    
+
     def __get_todays_follows_count(self, logs):
         todays_rows = logs['date'] == self.today
         follows_rows = logs['operation'] == 'FOLLOW'
         success_rows = logs['status'] == 'SUCCESS'
         return logs.loc[todays_rows & follows_rows & success_rows].shape[0]
-    
+
     def __get_todays_errors_count(self, logs):
         todays_rows = logs['date'] == self.today
         errors_rows = logs['status'] == 'FAILED'
         return logs.loc[todays_rows & errors_rows].shape[0]
-    
+
     def __is_already_liked(self, logs, url):
         likes_rows = logs['operation'] == 'LIKE'
         success_rows = logs['status'] == 'SUCCESS'
         return logs.loc[likes_rows & success_rows]['url'].eq(url).any()
-    
+
     def __is_already_followed(self, logs, url):
         follows_rows = logs['operation'] == 'FOLLOW'
         success_rows = logs['status'] == 'SUCCESS'
         return logs.loc[follows_rows & success_rows]['url'].eq(url).any()
-    
+
     def auto_likes(self):
         # 環境変数の読み込み
         username = os.getenv("INSTAGRAM_USERNAME")
@@ -131,11 +131,11 @@ class AutoOperator:
         if likes_count >= int(max_likes):
             print(f"\n\033[1m\033[041m既に１日のいいね！の上限回数({max_likes})を超えています。処理を終了します。\033[0m")
             exit()
-        
+
         errors_count = self.__get_todays_errors_count(logs)
         executable_errors_left = int(max_errors) - errors_count if int(max_errors) - errors_count > 0 else 0
         print(f"\033[1m\033[096m本日（{self.today}）の検出済エラー数 : \033[4m{errors_count}（あと{executable_errors_left}回許容）\033[0m\n")
-        if errors_count >= int(max_errors):
+        if (int(max_errors) > 0 and errors_count >= int(max_errors)) or (int(max_errors) == 0 and errors_count > int(max_errors)):
             print(f"\n\033[1m\033[041m既に１日のエラー検出許容回数({max_errors})を超えています。処理を終了します。\033[0m")
             exit()
 
@@ -219,10 +219,10 @@ class AutoOperator:
         max_errors = os.getenv("MAXIMUM_ERRORS")
 
         print("\033[1m\033[045m以下の設定で自動フォローを開始します。\033[0m")
-        print(f"\033[1m\033[095mユーザ名　　　：  {username}\033[0m")
-        print(f"\033[1m\033[095mパスワード　　：  {'*'*len(str(password))}\033[0m")
+        print(f"\033[1m\033[095mユーザ名　　　　：  {username}\033[0m")
+        print(f"\033[1m\033[095mパスワード　　　：  {'*'*len(str(password))}\033[0m")
         print(f"\033[1m\033[095m最大フォロー数　：  {max_follows}\033[0m")
-        print(f"\033[1m\033[095m許容エラー数　：  {max_errors}\033[0m")
+        print(f"\033[1m\033[095m許容エラー数　　：  {max_errors}\033[0m")
         print()
 
         # 検索ワード／ログファイルからデータの読み込み
@@ -235,7 +235,7 @@ class AutoOperator:
         if follows_count >= int(max_follows):
             print(f"\n\033[1m\033[041m既に１日のフォローの上限回数({max_follows})を超えています。処理を終了します。\033[0m")
             exit()
-        
+
         errors_count = self.__get_todays_errors_count(logs)
         executable_errors_left = int(max_errors) - errors_count if int(max_errors) - errors_count > 0 else 0
         print(f"\033[1m\033[096m本日（{self.today}）の検出済エラー数 : \033[4m{errors_count}（あと{executable_errors_left}回許容）\033[0m\n")
