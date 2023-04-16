@@ -4,8 +4,8 @@
 
 - 実装済み機能
     - 自動いいね
-- アップデート予定
     - 自動フォロー
+- アップデート予定
     - 自動アンフォロー
     - 自動投稿(ChatGPT)
     - その他要望に従う
@@ -22,6 +22,9 @@
 - 2023/4/16（v1.0.1）
     - ログに操作種別を記録するよう修正
     - ログにエラーを記録するよう修正
+- 2023/4/16（v1.1.0）
+    - 自動フォロー機能を実装
+    - 実行方法を微修正(Usageを参照)
 
 ## Usage
 - 任意の場所で`$ git clone <ここのURL>`
@@ -30,12 +33,14 @@
     - `INSTAGRAM_USERNAME` : インスタグラムログイン時のユーザ名
     - `INSTAGRAM_PASSWORD` : インスタグラムログイン時のパスワード
     - `MAXIMUM_LIKES` : １日の自動いいね上限（デフォルト50）
+    - `MAXIMUM_FOLLOWS` : １日の自動フォロー上限（デフォルト20）
     - `MAXIMUM_ERRORS` : １日のエラー許容上限（デフォルト10）
     - `CHROME_DRIVER_PATH` : Chromeドライバーへのパス
-- `config/search_words.txt`内にいいね対象とするハッシュタグを設定
+- `config/search_words.txt`内にいいね対象／フォロー対象とするハッシュタグを設定
     - 改行区切り
     - 「#」は不要
 - 依存パッケージインストール
     - `$ poetry install`
 - 実行
-    - `$ poetry run ./main.py`
+    - 自動いいね　　：　`$ poetry run ./main.py --like`
+    - 自動フォロー　：　`$ poetry run ./main.py --follow`
