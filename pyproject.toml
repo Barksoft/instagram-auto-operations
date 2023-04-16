@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "auto-operations"
-version = "1.0.0"
+name = "instagram-auto-operations"
+version = "1.0.1"
 description = "インスタグラム自動運用プログラム"
 authors = ["Shu Ogasawara <littlemoneyseeker@gmail.com>"]
 
