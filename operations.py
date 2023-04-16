@@ -23,6 +23,8 @@ class AutoOperator:
     def __init__(self):
         print("\033[1m\033[045mインスタグラム自動操作プログラム\033[0m")
         print()
+        # 動作環境依存変数
+        self.today = str(datetime.date.today())
         load_dotenv()
         driver_path = os.getenv("CHROME_DRIVER_PATH")
         # Chromeの起動
@@ -34,14 +36,12 @@ class AutoOperator:
     def __get_search_words(self):
         file_check = os.path.isfile(FILE_WORDS)
         if file_check:
-            print(f"\033[1m\033[046m以下ワードのハッシュタグ付き投稿をいいねします。\033[0m")
             words = []
             with open(FILE_WORDS,'r',encoding='utf-8') as f:
                 for row in f:
                     if row != "":
                         word = row.strip()
                         words.append(word)
-            print(f"\033[1m\033[096m#{', #'.join(words)}\033[0m")
             print()
         else:
             print(f"\033[1m\033[041m{FILE_WORDS}が見つかりません。処理を終了します。\033[041m" )
@@ -80,6 +80,17 @@ class AutoOperator:
                 href_list.append(href)
         return href_list
     
+    def __get_todays_likes_count(self, logs):
+        todays_rows = logs['date'] == self.today
+        likes_rows = logs['operation'] == 'LIKE'
+        success_rows = logs['status'] == 'SUCCESS'
+        return logs.loc[todays_rows & likes_rows & success_rows].shape[0]
+    
+    def __get_todays_errors_count(self, logs):
+        todays_rows = logs['date'] == self.today
+        errors_rows = logs['status'] == 'FAILED'
+        return logs.loc[todays_rows & errors_rows].shape[0]
+    
     def auto_likes(self):
         # 環境変数の読み込み
         username = os.getenv("INSTAGRAM_USERNAME")
@@ -94,24 +105,30 @@ class AutoOperator:
         print(f"\033[1m\033[095m許容エラー数　：  {max_errors}\033[0m")
         print()
 
-        # 動作環境依存変数
-        today = str(datetime.date.today())
-
         # 検索ワード／ログファイルからデータの読み込み
         search_words = self.__get_search_words()
         logs = pd.read_csv(FILE_AUTO_LIKES_LOG)
-        todays_rows = logs['date'] == today
-        likes_rows = logs['operation'] == 'LIKE'
-        executable_likes_left = int(max_likes) - logs.loc[todays_rows & likes_rows].shape[0] if int(max_likes) - logs.loc[todays_rows & likes_rows].shape[0] > 0 else 0
-        print(f"\033[1m\033[096m本日（{today}）の自動実行済いいね！数 : \033[4m{logs.loc[todays_rows & likes_rows].shape[0]}（あと{executable_likes_left}回実行可能）\033[0m\n")
-        if (logs['date'] == today).sum() >= int(max_likes):
+
+        likes_count = self.__get_todays_likes_count(logs)
+        executable_likes_left = int(max_likes) - likes_count if int(max_likes) - likes_count > 0 else 0
+        print(f"\033[1m\033[096m本日（{self.today}）の自動実行済いいね！数 : \033[4m{likes_count}（あと{executable_likes_left}回実行可能）\033[0m\n")
+        if likes_count >= int(max_likes):
             print(f"\n\033[1m\033[041m既に１日のいいね！の上限回数({max_likes})を超えています。処理を終了します。\033[0m")
             exit()
+        
+        errors_count = self.__get_todays_errors_count(logs)
+        executable_errors_left = int(max_errors) - errors_count if int(max_errors) - errors_count > 0 else 0
+        print(f"\033[1m\033[096m本日（{self.today}）の検出済エラー数 : \033[4m{errors_count}（あと{executable_errors_left}回許容）\033[0m\n")
+        if errors_count >= int(max_errors):
+            print(f"\n\033[1m\033[041m既に１日のエラー検出許容回数({max_errors})を超えています。処理を終了します。\033[0m")
+            exit()
+
+        print(f"\033[1m\033[046m以下ワードのハッシュタグ付き投稿をいいねします。\033[0m")
+        print(f"\033[1m\033[096m#{', #'.join(search_words)}\033[0m")
 
         self.__login(username, password)
 
         off = False
-        error_count = 0
         for word in search_words:
             if off:
                 break
@@ -140,18 +157,18 @@ class AutoOperator:
                         break
 
                     new_log = pd.DataFrame({
-                        'date': [today],
+                        'date': [self.today],
                         'time': [datetime.datetime.now().time()],
                         'operation': 'LIKE',
+                        'status': 'SUCCESS',
                         'url': [href]
                     })
                     logs = pd.concat([logs, new_log])
-                    todays_rows = logs['date'] == today
-                    likes_rows = logs['operation'] == 'LIKE'
-                    print(f"\033[1m\033[042m[本日{logs.loc[todays_rows & likes_rows].shape[0]}回目のいいね]：\033[0m\033[1m\033[032m　{href}\033[0m")
+                    likes_count = self.__get_todays_likes_count(logs)
+                    print(f"\033[1m\033[042m[本日{likes_count}回目のいいね]：\033[0m\033[1m\033[032m　{href}\033[0m")
 
                     #BAN防止
-                    if logs.loc[todays_rows & likes_rows].shape[0] >= int(max_likes):
+                    if likes_count >= int(max_likes):
                         print(f"\n\033[1m\033[041m１日のいいね！の上限回数({max_likes})を超えました。処理を終了します。\033[0m")
                         off = True
 
@@ -160,12 +177,20 @@ class AutoOperator:
                     print(ex)
                     print(ms)
                     traceback.print_tb(tb)
-                    error_count += 1
+                    new_log = pd.DataFrame({
+                        'date': [self.today],
+                        'time': [datetime.datetime.now().time()],
+                        'operation': 'LIKE',
+                        'status': 'FAILED',
+                        'url': [href]
+                    })
                     time.sleep(5)
-                    if error_count > int(max_errors):
+                    logs = pd.concat([logs, new_log])
+                    errors_count = self.__get_todays_errors_count(logs)
+                    if errors_count > int(max_errors):
                         print(f"\n\033[1m\033[041mエラーが{max_errors}回を超えました。処理を終了します。\033[0m")
                         off = True
                 if off:
                     break
         logs.to_csv(FILE_AUTO_LIKES_LOG, index=False)
-        print(f"\n\033[1m\033[096m[本日のいいね！回数]:　\033[4m{logs.loc[todays_rows & likes_rows].shape[0]}\033[0m")
+        print(f"\n\033[1m\033[096m[本日のいいね！回数]:　\033[4m{likes_count}\033[0m")
