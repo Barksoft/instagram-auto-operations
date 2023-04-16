@@ -23,6 +23,8 @@ class AutoOperator:
     def __init__(self):
         print("\033[1m\033[045mインスタグラム自動操作プログラム\033[0m")
         print()
+        # 動作環境依存変数
+        self.today = str(datetime.date.today())
         load_dotenv()
         driver_path = os.getenv("CHROME_DRIVER_PATH")
         # Chromeの起動
@@ -79,13 +81,13 @@ class AutoOperator:
         return href_list
     
     def __get_todays_likes_count(self, logs):
-        todays_rows = logs['date'] == today
+        todays_rows = logs['date'] == self.today
         likes_rows = logs['operation'] == 'LIKE'
         success_rows = logs['status'] == 'SUCCESS'
         return logs.loc[todays_rows & likes_rows & success_rows].shape[0]
     
     def __get_todays_errors_count(self, logs):
-        todays_rows = logs['date'] == today
+        todays_rows = logs['date'] == self.today
         errors_rows = logs['status'] == 'FAILED'
         return logs.loc[todays_rows & errors_rows].shape[0]
     
@@ -103,23 +105,20 @@ class AutoOperator:
         print(f"\033[1m\033[095m許容エラー数　：  {max_errors}\033[0m")
         print()
 
-        # 動作環境依存変数
-        today = str(datetime.date.today())
-
         # 検索ワード／ログファイルからデータの読み込み
         search_words = self.__get_search_words()
         logs = pd.read_csv(FILE_AUTO_LIKES_LOG)
 
         likes_count = self.__get_todays_likes_count(logs)
         executable_likes_left = int(max_likes) - likes_count if int(max_likes) - likes_count > 0 else 0
-        print(f"\033[1m\033[096m本日（{today}）の自動実行済いいね！数 : \033[4m{likes_count}（あと{executable_likes_left}回実行可能）\033[0m\n")
+        print(f"\033[1m\033[096m本日（{self.today}）の自動実行済いいね！数 : \033[4m{likes_count}（あと{executable_likes_left}回実行可能）\033[0m\n")
         if likes_count >= int(max_likes):
             print(f"\n\033[1m\033[041m既に１日のいいね！の上限回数({max_likes})を超えています。処理を終了します。\033[0m")
             exit()
         
         errors_count = self.__get_todays_errors_count(logs)
         executable_errors_left = int(max_errors) - errors_count if int(max_errors) - errors_count > 0 else 0
-        print(f"\033[1m\033[096m本日（{today}）の検出済エラー数 : \033[4m{errors_count}（あと{executable_errors_left}回許容）\033[0m\n")
+        print(f"\033[1m\033[096m本日（{self.today}）の検出済エラー数 : \033[4m{errors_count}（あと{executable_errors_left}回許容）\033[0m\n")
         if errors_count >= int(max_errors):
             print(f"\n\033[1m\033[041m既に１日のエラー検出許容回数({max_errors})を超えています。処理を終了します。\033[0m")
             exit()
@@ -158,7 +157,7 @@ class AutoOperator:
                         break
 
                     new_log = pd.DataFrame({
-                        'date': [today],
+                        'date': [self.today],
                         'time': [datetime.datetime.now().time()],
                         'operation': 'LIKE',
                         'status': 'SUCCESS',
@@ -179,7 +178,7 @@ class AutoOperator:
                     print(ms)
                     traceback.print_tb(tb)
                     new_log = pd.DataFrame({
-                        'date': [today],
+                        'date': [self.today],
                         'time': [datetime.datetime.now().time()],
                         'operation': 'LIKE',
                         'status': 'FAILED',
