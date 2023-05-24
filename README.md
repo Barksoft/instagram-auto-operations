@@ -27,6 +27,8 @@
     - 実行方法を微修正(Usageを参照)
 - 2023/4/16（v1.1.1）
     - エラー許容数が0に設定されている時、プログラムが開始しない問題を修正
+- 2023/5/24(v1.1.2)
+    - requirements.txtからパッケージインストールを可能に修正
 
 ## Usage
 - 任意の場所で`$ git clone <ここのURL>`
@@ -43,6 +45,8 @@
     - 「#」は不要
 - 依存パッケージインストール
     - `$ poetry install`
+    - OR
+    - `$ pip install requirements.txt`
 - 実行
-    - 自動いいね　　：　`$ poetry run ./main.py --like`
-    - 自動フォロー　：　`$ poetry run ./main.py --follow`
+    - 自動いいね　　：　`$ poetry run ./main.py --like` OR `$ python ./main.py --like`
+    - 自動フォロー　：　`$ poetry run ./main.py --follow` OR `$ python ./main.py --follow`
