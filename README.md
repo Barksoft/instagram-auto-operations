@@ -46,7 +46,7 @@
 - 依存パッケージインストール
     - `$ poetry install`
     - OR
-    - `$ pip install requirements.txt`
+    - `$ pip install -r requirements.txt`
 - 実行
     - 自動いいね　　：　`$ poetry run ./main.py --like` OR `$ python ./main.py --like`
     - 自動フォロー　：　`$ poetry run ./main.py --follow` OR `$ python ./main.py --follow`
